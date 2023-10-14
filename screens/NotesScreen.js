@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  FlatList,
-} from "react-native";
+import { StyleSheet,  Text,  View,  TouchableOpacity,  FlatList,} from "react-native";
+
 import { Ionicons } from "@expo/vector-icons";
 import * as SQLite from "expo-sqlite";
 import * as FileSystem from "expo-file-system";
+
+
 const db = SQLite.openDatabase("notes.db");
 console.log(FileSystem.documentDirectory);
 export default function NotesScreen({ navigation, route }) {
@@ -16,14 +13,14 @@ export default function NotesScreen({ navigation, route }) {
   function refreshNotes() {
     db.transaction((tx) => {
       tx.executeSql(
-        "SELECT * FROM notes",
+        "SELECT * FROM notes ORDER BY done ASC",
         null,
         (txObj, { rows: { _array } }) => setNotes(_array),
         (txObj, error) => console.log(`Error: ${error}`)
       );
     });
   }
-  // This is to set up the database on first run
+  // This is to initialise db
   useEffect(() => {
     db.transaction(
       (tx) => {
@@ -39,7 +36,8 @@ export default function NotesScreen({ navigation, route }) {
       refreshNotes
     );
   }, []);
-  // This is to set up the top right button
+
+
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -57,7 +55,7 @@ export default function NotesScreen({ navigation, route }) {
       ),
     });
   });
-  // Monitor route.params for changes and add items to the database
+
   useEffect(() => {
     if (route.params?.text) {
       db.transaction(
@@ -71,11 +69,12 @@ export default function NotesScreen({ navigation, route }) {
       );
     }
   }, [route.params?.text]);
-  function addNote() {
-    navigation.navigate("Add Screen");
-  }
 
-  // This deletes an individual note
+  function addNote() {
+    navigation.navigate("Add Note");
+    }
+    
+
   function deleteNote(id) {
     console.log("Deleting " + id);
     db.transaction(
@@ -87,8 +86,25 @@ export default function NotesScreen({ navigation, route }) {
     );
   }
 
-  // The function to render each row in our FlatList
-  function renderItem({ item }) {
+  function handlePress(id, currentDone) {
+    console.log("Updating " + id);
+    const newDone = currentDone === 1 ? 0 : 1; 
+  
+    db.transaction(
+      (tx) => {
+        tx.executeSql(`UPDATE notes SET done=${newDone} WHERE id=${id}`);
+      },
+      null,
+      refreshNotes
+    );
+  }
+  
+
+    function renderItem({ item }) {
+
+      const textStyle = item.done === 1 ? styles.greyText : styles.normalText;
+   
+
     return (
       <View
         style={{
@@ -101,13 +117,21 @@ export default function NotesScreen({ navigation, route }) {
           justifyContent: "space-between",
         }}
       >
-        <Text>{item.title}</Text>
+       <TouchableOpacity onPress={() => handlePress(item.id,item.done)}>
+      <View>
+      <Text style={textStyle}>{item.title}</Text>
+      </View>
+    </TouchableOpacity>
+
+
         <TouchableOpacity onPress={() => deleteNote(item.id)}>
           <Ionicons name="trash" size={16} color="#944" />
         </TouchableOpacity>
+        
       </View>
     );
   }
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -126,4 +150,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  rowNormal: {
+    padding: 10,
+  },
+  rowPressed: {
+    padding: 10,
+  }, normalText: {
+    color: "black", // Default text color
+  },
+  greyText: {
+    color: "grey", // Text color when item.done is 1
+  }
+ 
 });

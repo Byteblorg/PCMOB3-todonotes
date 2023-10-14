@@ -30,6 +30,7 @@ This is what you typed:
 <Text style={{ color: "#333", marginTop: 10 }}>{text}</Text>
 </View>
 );
+
 }
 
 const styles = StyleSheet.create({
@@ -56,7 +57,7 @@ fontWeight: "bold",
 color: "white"
 },
 submitButton: {
-backgroundColor: "orange"
+backgroundColor: "green"
 },
 cancelButton: {
 backgroundColor: "red"
